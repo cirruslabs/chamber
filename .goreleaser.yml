@@ -1,0 +1,79 @@
+version: 2
+
+project_name: chamber
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - main: cmd/chamber/main.go
+    ldflags: >
+      -X github.com/cirruslabs/chamber/internal/version.Version={{.Version}}
+      -X github.com/cirruslabs/chamber/internal/version.Commit={{.ShortCommit}}
+    env:
+      - CGO_ENABLED={{if eq .Os "darwin"}}1{{else}}0{{end}}
+    goos:
+      - linux
+      - windows
+      - darwin
+      - freebsd
+      - openbsd
+      - netbsd
+    goarch:
+      - amd64
+      - arm
+      - arm64
+      - s390x
+    hooks:
+      post:
+        - bash .ci/remove-signature.sh {{ .Path }}
+
+archives:
+  - id: binary
+    formats: binary
+    name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+  - id: regular
+    name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+
+release:
+  prerelease: auto
+
+brews:
+  - name: chamber
+    ids:
+      - regular
+    repository:
+      owner: cirruslabs
+      name: homebrew-cli
+    license: MIT
+    install: |
+      bin.install "chamber"
+      generate_completions_from_executable(bin/"chamber", "completion")
+    caveats: See the Github repository for more information
+
+nfpms:
+  - package_name: chamber
+    vendor: Cirrus Labs, Inc.
+    homepage: https://github.com/cirruslabs/chamber
+    maintainer: support@cirruslabs.org
+    description: Run commands in Tart virtual machines with directory mounting
+    license: MIT
+    section: devel
+    formats:
+      - deb
+      - rpm
+
+furies:
+  - account: cirruslabs
+
+notarize:
+  macos:
+    - enabled: '{{ isEnvSet "MACOS_SIGN_P12" }}'
+      sign:
+        certificate: "{{.Env.MACOS_SIGN_P12}}"
+        password: "{{.Env.MACOS_SIGN_PASSWORD}}"
+      notarize:
+        issuer_id: "{{.Env.MACOS_NOTARY_ISSUER_ID}}"
+        key_id: "{{.Env.MACOS_NOTARY_KEY_ID}}"
+        key: "{{.Env.MACOS_NOTARY_KEY}}"
