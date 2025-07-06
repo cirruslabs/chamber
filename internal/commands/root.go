@@ -28,14 +28,18 @@ var (
 func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "chamber [flags] command [args...]",
-		Short: "Run commands in Tart VMs",
-		Long: `Chamber runs commands inside Tart virtual machines with the current directory mounted.
+		Short: "Run commands in isolated Tart VMs - prevents prompt injection attacks",
+		Long: `Chamber runs commands inside ephemeral Tart virtual machines with the current directory mounted.
 Similar to nohup, chamber clones a VM from the specified image, starts it with the working
 directory mounted, executes the command inside the VM, and destroys the VM on exit.
 
+🛡️  SECURITY: Perfect for AI agents in "YOLO" mode - prevents prompt injection attacks by
+isolating execution in ephemeral VMs that are automatically destroyed after each run.
+
 Example:
   chamber --vm=macos-ventura-base swift test
-  chamber --vm=macos-xcode claude --dangerously-skip-permissions
+  chamber --vm=macos-xcode claude --dangerously-skip-permissions  # Safe AI agent execution
+  chamber --vm=macos-xcode aider --yes --auto-commits             # Isolated "YOLO" mode
   chamber --vm=macos-xcode make build`,
 		Version:       version.FullVersion,
 		SilenceUsage:  true,
@@ -51,6 +55,9 @@ Example:
 	cmd.Flags().StringVar(&sshPass, "ssh-pass", "admin", "SSH password")
 	cmd.Flags().BoolVar(&dangerouslySkipPermissions, "dangerously-skip-permissions", false, "Skip permission checks (use with caution)")
 	cmd.MarkFlagRequired("vm")
+
+	// Stop parsing flags after the first non-flag argument (the command to execute)
+	cmd.Flags().SetInterspersed(false)
 
 	return cmd
 }
