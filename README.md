@@ -35,25 +35,28 @@ go build -o chamber ./cmd/chamber/
 Basic usage:
 
 ```bash
-chamber --image <tart-image> -- <command> [args...]
+chamber --vm <tart-image> <command> [args...]
 ```
 
 Examples:
 
 ```bash
 # Run Swift tests in a VM
-chamber --image ghcr.io/cirruslabs/macos-ventura-base:latest -- swift test
+chamber --vm ghcr.io/cirruslabs/macos-ventura-base:latest swift test
+
+# Run claude with dangerous permissions skip (similar to nohup)
+chamber --vm macos-xcode claude --dangerously-skip-permissions
 
 # Build a project with custom resources
-chamber --image my-custom-image --cpu 8 --memory 16384 -- make build
+chamber --vm my-custom-image --cpu 8 --memory 16384 make build
 
 # Run a shell script
-chamber --image ghcr.io/cirruslabs/macos-ventura-base:latest -- ./build.sh
+chamber --vm ghcr.io/cirruslabs/macos-ventura-base:latest ./build.sh
 ```
 
 ## Command Line Options
 
-- `--image` (required): Tart VM image to use
+- `--vm` (required): Tart VM image to use
 - `--cpu`: Number of CPUs to allocate (default: VM default)
 - `--memory`: Memory in MB to allocate (default: VM default)
 - `--ssh-user`: SSH username (default: "admin")

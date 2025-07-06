@@ -27,13 +27,16 @@ var (
 
 func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "chamber [flags] -- command [args...]",
-		Short:         "Run commands in Tart VMs",
+		Use:   "chamber [flags] command [args...]",
+		Short: "Run commands in Tart VMs",
 		Long: `Chamber runs commands inside Tart virtual machines with the current directory mounted.
+Similar to nohup, chamber clones a VM from the specified image, starts it with the working
+directory mounted, executes the command inside the VM, and destroys the VM on exit.
 
 Example:
-  chamber --vm=macos-ventura-base -- swift test
-  chamber --vm=macos-xcode -- make build`,
+  chamber --vm=macos-ventura-base swift test
+  chamber --vm=macos-xcode claude --dangerously-skip-permissions
+  chamber --vm=macos-xcode make build`,
 		Version:       version.FullVersion,
 		SilenceUsage:  true,
 		SilenceErrors: true,
