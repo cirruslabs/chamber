@@ -20,9 +20,9 @@ var (
 func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "chamber",
-		Short: "Run commands in isolated Tart VMs - prevents prompt injection attacks",
+		Short: "Run commands in isolated Tart VMs - prevents prompt injection attacks and possible host destruction",
 		Long: `Chamber runs commands inside ephemeral Tart virtual machines with the current directory mounted.
-Similar to nohup, chamber clones a VM from the specified image, starts it with the working
+Similar to nohup, chamber clones a VM from the seed image, starts it with the working
 directory mounted, executes the command inside the VM, and destroys the VM on exit.
 
 🛡️  SECURITY: Perfect for AI agents in "YOLO" mode - prevents prompt injection attacks by
@@ -30,11 +30,9 @@ isolating execution in ephemeral VMs that are automatically destroyed after each
 
 Example:
   chamber claude                                              # Run Claude AI in VM
-  chamber claude --model opus-3.5                            # Run Claude with specific model
-  chamber init ghcr.io/cirruslabs/macos-sonoma-base:latest  # Initialize chamber-seed VM
-
-For backward compatibility, you can also run commands directly:
-  chamber --vm=macos-xcode make build`,
+  chamber claude --model opus .                               # Run Claude with specific model
+  chamber init ghcr.io/cirruslabs/macos-sequoia-base:latest   # Initialize chamber-seed VM
+`,
 		Version:       version.FullVersion,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -43,14 +41,14 @@ For backward compatibility, you can also run commands directly:
 			if len(args) == 0 {
 				return cmd.Help()
 			}
-			
+
 			// Check if first arg is a subcommand
 			for _, subCmd := range cmd.Commands() {
 				if args[0] == subCmd.Name() {
 					return fmt.Errorf("unknown command %q for %q", args[0], cmd.Name())
 				}
 			}
-			
+
 			// Backward compatibility: run command directly
 			return runCommand(context.Background(), vmImage, cpuCount, memoryMB, sshUser, sshPass, dangerouslySkipPermissions, args)
 		},
