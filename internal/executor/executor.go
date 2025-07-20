@@ -14,24 +14,13 @@ import (
 type Executor struct {
 	sshClient      *ssh.Client
 	workingDir     string
-	env            map[string]string
 	mountedWorkDir string
 }
 
-func New(sshClient *ssh.Client, workingDir string, envSlice []string) *Executor {
-	// Convert environment slice to map
-	env := make(map[string]string)
-	for _, e := range envSlice {
-		parts := strings.SplitN(e, "=", 2)
-		if len(parts) == 2 {
-			env[parts[0]] = parts[1]
-		}
-	}
-
+func New(sshClient *ssh.Client, workingDir string) *Executor {
 	return &Executor{
 		sshClient:      sshClient,
 		workingDir:     workingDir,
-		env:            env,
 		mountedWorkDir: "$HOME/workspace",
 	}
 }
@@ -99,14 +88,6 @@ func (e *Executor) Execute(ctx context.Context, command string, args []string) e
 	// Start a shell
 	if err := session.Shell(); err != nil {
 		return fmt.Errorf("failed to start shell: %w", err)
-	}
-
-	// Set environment variables
-	for key, value := range e.env {
-		_, err = stdin.Write([]byte(fmt.Sprintf("export %s=\"%s\"\n", key, value)))
-		if err != nil {
-			return fmt.Errorf("failed to set environment variable %s: %w", key, err)
-		}
 	}
 
 	// Change to mounted working directory

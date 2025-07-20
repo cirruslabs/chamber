@@ -150,7 +150,7 @@ func run(cmd *cobra.Command, args []string) error {
 	defer sshClient.Close()
 
 	// Create executor
-	exec := executor.New(sshClient, cwd, os.Environ())
+	exec := executor.New(sshClient, cwd)
 
 	// Mount working directory
 	fmt.Fprintln(os.Stderr, "Mounting working directory...")
