@@ -99,7 +99,7 @@ chamber --vm=macos-xcode claude --dangerously-skip-permissions
 2. Configures the VM with requested CPU/memory settings
 3. Starts the VM with the current directory mounted via virtiofs
 4. Establishes SSH connection to the VM
-5. Mounts the working directory inside the VM at `$HOME/working-dir`
+5. Mounts the working directory inside the VM at `$HOME/workspace`
 6. Executes the specified command in that directory (AI agents run in complete isolation)
 7. Streams stdout/stderr back to the host (similar to nohup)
 8. **Automatically destroys the VM** after execution (or on interrupt) - no persistence of malicious changes

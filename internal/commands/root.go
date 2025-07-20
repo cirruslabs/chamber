@@ -114,9 +114,9 @@ func run(cmd *cobra.Command, args []string) error {
 	fmt.Fprintln(os.Stderr, "Starting VM...")
 	directoryMounts := []tart.DirectoryMount{
 		{
-			Name:     "working-dir",
+			Name:     "workspace",
 			Path:     cwd,
-			Tag:      "tart.virtiofs.working-dir",
+			Tag:      "tart.virtiofs.workspace",
 			ReadOnly: false,
 		},
 	}

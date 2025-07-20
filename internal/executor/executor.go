@@ -12,10 +12,10 @@ import (
 )
 
 type Executor struct {
-	sshClient       *ssh.Client
-	workingDir      string
-	env             map[string]string
-	mountedWorkDir  string
+	sshClient      *ssh.Client
+	workingDir     string
+	env            map[string]string
+	mountedWorkDir string
 }
 
 func New(sshClient *ssh.Client, workingDir string, envSlice []string) *Executor {
@@ -32,7 +32,7 @@ func New(sshClient *ssh.Client, workingDir string, envSlice []string) *Executor 
 		sshClient:      sshClient,
 		workingDir:     workingDir,
 		env:            env,
-		mountedWorkDir: "$HOME/working-dir",
+		mountedWorkDir: "$HOME/workspace",
 	}
 }
 
@@ -44,7 +44,7 @@ func (e *Executor) MountWorkingDirectory(ctx context.Context) error {
 	defer session.Close()
 
 	// Create mount point and mount virtiofs
-	tag := "tart.virtiofs.working-dir"
+	tag := "tart.virtiofs.workspace"
 	command := fmt.Sprintf("mkdir -p %q && mount_virtiofs %q %q", e.mountedWorkDir, tag, e.mountedWorkDir)
 
 	if err := session.Run(command); err != nil {
