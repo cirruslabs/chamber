@@ -24,7 +24,7 @@ func NewInitCmd() *cobra.Command {
 3. Running claude setup-token with output redirected to current terminal
 
 Example:
-  chamber init ghcr.io/cirruslabs/macos-sonoma-base:latest`,
+  chamber init ghcr.io/cirruslabs/macos-sequoia-base:latest`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			remoteVM = args[0]
@@ -113,7 +113,7 @@ func runInit(ctx context.Context, remoteVM string) error {
 	// Run claude setup-token with terminal attached
 	fmt.Fprintln(os.Stderr, "\nSetting up Claude token...")
 	fmt.Fprintln(os.Stderr, "Please follow the instructions below:\n")
-	
+
 	session2, err := sshClient.NewSession()
 	if err != nil {
 		return fmt.Errorf("failed to create SSH session: %w", err)
