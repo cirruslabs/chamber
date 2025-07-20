@@ -30,6 +30,7 @@ func main() {
 	}
 }
 
-func mainImpl(ctx context.Context) error { // Run the command
-	return commands.NewRootCmd().ExecuteContext(ctx)
+func mainImpl(ctx context.Context) error {
+	// Use Execute() which handles backward compatibility
+	return commands.Execute()
 }

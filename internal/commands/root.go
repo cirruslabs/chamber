@@ -3,16 +3,8 @@ package commands
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
-	"path/filepath"
-	"strings"
-	"syscall"
 
-	"github.com/cirruslabs/chamber/internal/executor"
-	"github.com/cirruslabs/chamber/internal/ssh"
 	"github.com/cirruslabs/chamber/internal/version"
-	"github.com/cirruslabs/chamber/internal/vm/tart"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +19,7 @@ var (
 
 func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "chamber [flags] command [args...]",
+		Use:   "chamber",
 		Short: "Run commands in isolated Tart VMs - prevents prompt injection attacks",
 		Long: `Chamber runs commands inside ephemeral Tart virtual machines with the current directory mounted.
 Similar to nohup, chamber clones a VM from the specified image, starts it with the working
@@ -37,134 +29,51 @@ directory mounted, executes the command inside the VM, and destroys the VM on ex
 isolating execution in ephemeral VMs that are automatically destroyed after each run.
 
 Example:
-  chamber --vm=macos-ventura-base swift test
-  chamber --vm=macos-xcode claude --dangerously-skip-permissions  # Safe AI agent execution
-  chamber --vm=macos-xcode aider --yes --auto-commits             # Isolated "YOLO" mode
+  chamber claude                                              # Run Claude AI in VM
+  chamber claude --model opus-3.5                            # Run Claude with specific model
+  chamber init ghcr.io/cirruslabs/macos-sonoma-base:latest  # Initialize chamber-seed VM
+
+For backward compatibility, you can also run commands directly:
   chamber --vm=macos-xcode make build`,
 		Version:       version.FullVersion,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Args:          cobra.MinimumNArgs(1),
-		RunE:          run,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// If no args or first arg is a known subcommand, show help
+			if len(args) == 0 {
+				return cmd.Help()
+			}
+			
+			// Check if first arg is a subcommand
+			for _, subCmd := range cmd.Commands() {
+				if args[0] == subCmd.Name() {
+					return fmt.Errorf("unknown command %q for %q", args[0], cmd.Name())
+				}
+			}
+			
+			// Backward compatibility: run command directly
+			return runCommand(context.Background(), vmImage, cpuCount, memoryMB, sshUser, sshPass, dangerouslySkipPermissions, args)
+		},
 	}
 
-	cmd.Flags().StringVar(&vmImage, "vm", "chamber-seed", "Tart VM image to use (default: chamber-seed)")
-	cmd.Flags().Uint32Var(&cpuCount, "cpu", 0, "Number of CPUs (0 = default)")
-	cmd.Flags().Uint32Var(&memoryMB, "memory", 0, "Memory in MB (0 = default)")
-	cmd.Flags().StringVar(&sshUser, "ssh-user", "admin", "SSH username")
-	cmd.Flags().StringVar(&sshPass, "ssh-pass", "admin", "SSH password")
-	cmd.Flags().BoolVar(&dangerouslySkipPermissions, "dangerously-skip-permissions", false, "Skip permission checks (use with caution)")
+	// Add global flags for backward compatibility
+	cmd.PersistentFlags().StringVar(&vmImage, "vm", "chamber-seed", "Tart VM image to use (default: chamber-seed)")
+	cmd.PersistentFlags().Uint32Var(&cpuCount, "cpu", 0, "Number of CPUs (0 = default)")
+	cmd.PersistentFlags().Uint32Var(&memoryMB, "memory", 0, "Memory in MB (0 = default)")
+	cmd.PersistentFlags().StringVar(&sshUser, "ssh-user", "admin", "SSH username")
+	cmd.PersistentFlags().StringVar(&sshPass, "ssh-pass", "admin", "SSH password")
+	cmd.PersistentFlags().BoolVar(&dangerouslySkipPermissions, "dangerously-skip-permissions", false, "Skip permission checks (use with caution)")
 
-	// Stop parsing flags after the first non-flag argument (the command to execute)
+	// Stop parsing flags after the first non-flag argument
 	cmd.Flags().SetInterspersed(false)
+
+	// Add subcommands
+	cmd.AddCommand(NewInitCmd())
+	cmd.AddCommand(NewClaudeCmd())
 
 	return cmd
 }
 
-func run(cmd *cobra.Command, args []string) error {
-	// Check if Tart is installed
-	if !tart.Installed() {
-		return fmt.Errorf("tart is not installed. Please install it from https://github.com/cirruslabs/tart")
-	}
-
-	// Get current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
-	}
-	cwd, err = filepath.Abs(cwd)
-	if err != nil {
-		return fmt.Errorf("failed to get absolute path: %w", err)
-	}
-
-	// Create context with cancellation
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Handle interrupts
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-sigChan
-		fmt.Fprintln(os.Stderr, "\nInterrupted, cleaning up...")
-		cancel()
-	}()
-
-	// Create VM
-	fmt.Fprintf(os.Stderr, "Creating ephemeral VM from %s...\n", vmImage)
-	vm, err := tart.NewVMClonedFrom(ctx, vmImage, nil)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		fmt.Fprintln(os.Stderr, "Cleaning up VM...")
-		if err := vm.Close(); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to clean up VM: %v\n", err)
-		}
-	}()
-
-	// Configure VM
-	fmt.Fprintln(os.Stderr, "Configuring VM...")
-	if err := vm.Configure(ctx, cpuCount, memoryMB); err != nil {
-		return err
-	}
-
-	// Start VM with directory mount
-	fmt.Fprintln(os.Stderr, "Starting VM...")
-	directoryMounts := []tart.DirectoryMount{
-		{
-			Name:     "workspace",
-			Path:     cwd,
-			Tag:      "tart.virtiofs.workspace",
-			ReadOnly: false,
-		},
-	}
-	vm.Start(ctx, directoryMounts)
-
-	// Wait for VM to get IP
-	fmt.Fprintln(os.Stderr, "Waiting for VM to boot...")
-	ip, err := vm.RetrieveIP(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get VM IP: %w", err)
-	}
-	fmt.Fprintf(os.Stderr, "VM IP: %s\n", ip)
-
-	// Check for VM startup errors
-	select {
-	case err := <-vm.ErrChan():
-		if err != nil {
-			return fmt.Errorf("VM failed to start: %w", err)
-		}
-	default:
-		// VM is running
-	}
-
-	// Connect via SSH
-	fmt.Fprintln(os.Stderr, "Connecting to VM via SSH...")
-	sshAddr := fmt.Sprintf("%s:22", ip)
-	sshClient, err := ssh.WaitForSSH(ctx, sshAddr, sshUser, sshPass)
-	if err != nil {
-		return fmt.Errorf("failed to connect via SSH: %w", err)
-	}
-	defer sshClient.Close()
-
-	// Create executor
-	exec := executor.New(sshClient, cwd)
-
-	// Mount working directory
-	fmt.Fprintln(os.Stderr, "Mounting working directory...")
-	if err := exec.MountWorkingDirectory(ctx); err != nil {
-		return err
-	}
-	defer exec.UnmountWorkingDirectory(ctx)
-
-	// Execute command
-	fmt.Fprintf(os.Stderr, "Executing command: %s %v\n", args[0], args[1:])
-	fmt.Fprintln(os.Stderr, strings.Repeat("-", 80))
-
-	if err := exec.Execute(ctx, args[0], args[1:]); err != nil {
-		return err
-	}
-
-	return nil
+func Execute() error {
+	return NewRootCmd().Execute()
 }

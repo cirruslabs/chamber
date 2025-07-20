@@ -134,8 +134,11 @@ func (vm *VM) RetrieveIP(ctx context.Context) (string, error) {
 }
 
 func (vm *VM) Stop() error {
+	return vm.StopWithContext(context.Background())
+}
+
+func (vm *VM) StopWithContext(ctx context.Context) error {
 	// Try to gracefully stop the VM
-	ctx := context.Background()
 	_, _, _ = Cmd(ctx, vm.env, "stop", "--timeout", "5", vm.ident)
 
 	vm.runningVMCtxCancel()
@@ -155,4 +158,27 @@ func (vm *VM) Close() error {
 		return err
 	}
 	return vm.Delete()
+}
+
+// NewVM creates a VM instance for an existing VM
+func NewVM(ctx context.Context, name string) (*VM, error) {
+	runningVMCtx, runningVMCtxCancel := context.WithCancel(context.Background())
+
+	vm := &VM{
+		ident:              name,
+		runningVMCtx:       runningVMCtx,
+		runningVMCtxCancel: runningVMCtxCancel,
+		errChan:            make(chan error, 1),
+	}
+
+	return vm, nil
+}
+
+// CloneVM clones a VM from source to destination
+func CloneVM(ctx context.Context, from, to string) error {
+	_, _, err := Cmd(ctx, nil, "clone", from, to)
+	if err != nil {
+		return fmt.Errorf("failed to clone VM from %q to %q: %w", from, to, err)
+	}
+	return nil
 }
