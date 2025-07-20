@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -21,7 +22,7 @@ func Installed() bool {
 	return err == nil
 }
 
-func Cmd(
+func CmdWithCapture(
 	ctx context.Context,
 	additionalEnvironment map[string]string,
 	name string,
@@ -58,6 +59,46 @@ func Cmd(
 	}
 
 	return stdout.String(), stderr.String(), err
+}
+
+func Cmd(
+	ctx context.Context,
+	additionalEnvironment map[string]string,
+	name string,
+	args ...string,
+) error {
+	// Fallback for non-macOS systems
+	args = append([]string{name}, args...)
+
+	cmd := exec.CommandContext(ctx, tartCommandName, args...)
+
+	// Default environment
+	cmd.Env = cmd.Environ()
+
+	// Additional environment
+	for key, value := range additionalEnvironment {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	// Inherit stdout, stdin, stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	err := cmd.Run()
+	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return fmt.Errorf("%w: %s command not found in PATH, make sure Tart is installed",
+				ErrTartNotFound, tartCommandName)
+		}
+
+		if _, ok := err.(*exec.ExitError); ok {
+			// Tart command failed
+			return fmt.Errorf("%w", ErrTartFailed)
+		}
+	}
+
+	return err
 }
 
 func firstNonEmptyLine(outputs ...string) string {

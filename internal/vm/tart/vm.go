@@ -50,7 +50,7 @@ func NewVMClonedFrom(
 	}
 
 	// Clone the VM
-	if _, _, err := Cmd(ctx, vm.env, "clone", from, vm.ident); err != nil {
+	if err := Cmd(ctx, vm.env, "clone", from, vm.ident); err != nil {
 		return nil, fmt.Errorf("failed to clone VM from %q: %w", from, err)
 	}
 
@@ -63,20 +63,20 @@ func (vm *VM) Ident() string {
 
 func (vm *VM) Configure(ctx context.Context, cpu uint32, memory uint32) error {
 	// Set random MAC address to avoid conflicts
-	if _, _, err := Cmd(ctx, vm.env, "set", vm.ident, "--random-mac"); err != nil {
+	if err := Cmd(ctx, vm.env, "set", vm.ident, "--random-mac"); err != nil {
 		return fmt.Errorf("failed to set random MAC: %w", err)
 	}
 
 	if cpu != 0 {
 		cpuStr := fmt.Sprintf("%d", cpu)
-		if _, _, err := Cmd(ctx, vm.env, "set", vm.ident, "--cpu", cpuStr); err != nil {
+		if err := Cmd(ctx, vm.env, "set", vm.ident, "--cpu", cpuStr); err != nil {
 			return fmt.Errorf("failed to set CPU count: %w", err)
 		}
 	}
 
 	if memory != 0 {
 		memoryStr := fmt.Sprintf("%d", memory)
-		if _, _, err := Cmd(ctx, vm.env, "set", vm.ident, "--memory", memoryStr); err != nil {
+		if err := Cmd(ctx, vm.env, "set", vm.ident, "--memory", memoryStr); err != nil {
 			return fmt.Errorf("failed to set memory: %w", err)
 		}
 	}
@@ -114,7 +114,7 @@ func (vm *VM) Start(ctx context.Context, directoryMounts []DirectoryMount) {
 
 		args = append(args, vm.ident)
 
-		_, _, err := Cmd(vm.runningVMCtx, vm.env, "run", args...)
+		err := Cmd(vm.runningVMCtx, vm.env, "run", args...)
 		vm.errChan <- err
 	}()
 }
@@ -125,7 +125,7 @@ func (vm *VM) ErrChan() chan error {
 
 func (vm *VM) RetrieveIP(ctx context.Context) (string, error) {
 	// Wait up to 30 seconds for the VM to get an IP
-	stdout, _, err := Cmd(ctx, vm.env, "ip", "--wait", "30", vm.ident)
+	stdout, _, err := CmdWithCapture(ctx, vm.env, "ip", "--wait", "30", vm.ident)
 	if err != nil {
 		return "", err
 	}
@@ -139,7 +139,7 @@ func (vm *VM) Stop() error {
 
 func (vm *VM) StopWithContext(ctx context.Context) error {
 	// Try to gracefully stop the VM
-	_, _, _ = Cmd(ctx, vm.env, "stop", "--timeout", "5", vm.ident)
+	_ = Cmd(ctx, vm.env, "stop", "--timeout", "5", vm.ident)
 
 	vm.runningVMCtxCancel()
 	vm.wg.Wait()
@@ -149,7 +149,7 @@ func (vm *VM) StopWithContext(ctx context.Context) error {
 
 func (vm *VM) Delete() error {
 	ctx := context.Background()
-	_, _, err := Cmd(ctx, vm.env, "delete", vm.ident)
+	err := Cmd(ctx, vm.env, "delete", vm.ident)
 	return err
 }
 
@@ -176,7 +176,7 @@ func NewVM(ctx context.Context, name string) (*VM, error) {
 
 // CloneVM clones a VM from source to destination
 func CloneVM(ctx context.Context, from, to string) error {
-	_, _, err := Cmd(ctx, nil, "clone", from, to)
+	err := Cmd(ctx, nil, "clone", from, to)
 	if err != nil {
 		return fmt.Errorf("failed to clone VM from %q to %q: %w", from, to, err)
 	}
