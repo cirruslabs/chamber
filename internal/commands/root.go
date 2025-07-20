@@ -48,13 +48,12 @@ Example:
 		RunE:          run,
 	}
 
-	cmd.Flags().StringVar(&vmImage, "vm", "", "Tart VM image to use (required)")
+	cmd.Flags().StringVar(&vmImage, "vm", "chamber-seed", "Tart VM image to use (default: chamber-seed)")
 	cmd.Flags().Uint32Var(&cpuCount, "cpu", 0, "Number of CPUs (0 = default)")
 	cmd.Flags().Uint32Var(&memoryMB, "memory", 0, "Memory in MB (0 = default)")
 	cmd.Flags().StringVar(&sshUser, "ssh-user", "admin", "SSH username")
 	cmd.Flags().StringVar(&sshPass, "ssh-pass", "admin", "SSH password")
 	cmd.Flags().BoolVar(&dangerouslySkipPermissions, "dangerously-skip-permissions", false, "Skip permission checks (use with caution)")
-	cmd.MarkFlagRequired("vm")
 
 	// Stop parsing flags after the first non-flag argument (the command to execute)
 	cmd.Flags().SetInterspersed(false)
