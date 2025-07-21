@@ -8,16 +8,17 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/crypto/ssh"
+	"github.com/cirruslabs/chamber/internal/ssh"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 type Executor struct {
-	sshClient      *ssh.Client
+	sshClient      *gossh.Client
 	workingDir     string
 	mountedWorkDir string
 }
 
-func New(sshClient *ssh.Client, workingDir string) *Executor {
+func New(sshClient *gossh.Client, workingDir string) *Executor {
 	return &Executor{
 		sshClient:      sshClient,
 		workingDir:     workingDir,
@@ -107,7 +108,7 @@ func (e *Executor) Execute(ctx context.Context, command string, args []string) e
 	go func() {
 		<-ctx.Done()
 		// Send interrupt signal to the shell
-		session.Signal(ssh.SIGINT)
+		session.Signal(gossh.SIGINT)
 		// Close the session to force termination
 		session.Close()
 	}()
@@ -119,7 +120,7 @@ func (e *Executor) Execute(ctx context.Context, command string, args []string) e
 			return fmt.Errorf("command interrupted")
 		}
 		// Check if it's an exit error, which means the command ran but returned non-zero
-		if exitErr, ok := err.(*ssh.ExitError); ok {
+		if exitErr, ok := err.(*gossh.ExitError); ok {
 			// Return a more descriptive error
 			return fmt.Errorf("command exited with status %d", exitErr.ExitStatus())
 		}
@@ -127,6 +128,18 @@ func (e *Executor) Execute(ctx context.Context, command string, args []string) e
 	}
 
 	return nil
+}
+
+// ExecuteInteractive executes a command with full terminal proxying
+func (e *Executor) ExecuteInteractive(ctx context.Context, command string, args []string) error {
+	// Create terminal proxy
+	terminal := ssh.NewTerminal(e.sshClient)
+
+	// Build the full command with working directory change
+	fullCommand := fmt.Sprintf("cd %s && %s %s", e.mountedWorkDir, command, strings.Join(args, " "))
+
+	// Execute with full terminal proxying
+	return terminal.RunInteractiveCommand(ctx, fullCommand)
 }
 
 func (e *Executor) streamOutput(reader io.Reader, writer io.Writer) {

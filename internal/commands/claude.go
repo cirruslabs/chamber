@@ -54,7 +54,7 @@ Example:
 	return cmd
 }
 
-func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, sshUser, sshPass string, dangerouslySkipPermissions bool, args []string) error {
+func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, sshUser, sshPass string, interactive bool, args []string) error {
 	// Check if Tart is installed
 	if !tart.Installed() {
 		return fmt.Errorf("tart is not installed. Please install it from https://github.com/cirruslabs/tart")
@@ -161,8 +161,15 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 	fmt.Fprintf(os.Stdout, "Executing command: %s %v\n", args[0], args[1:])
 	fmt.Fprintln(os.Stdout, strings.Repeat("-", 80))
 
-	if err := exec.Execute(ctx, args[0], args[1:]); err != nil {
-		return err
+	// Use interactive or non-interactive execution based on the parameter
+	if interactive {
+		if err := exec.ExecuteInteractive(ctx, args[0], args[1:]); err != nil {
+			return err
+		}
+	} else {
+		if err := exec.Execute(ctx, args[0], args[1:]); err != nil {
+			return err
+		}
 	}
 
 	return nil

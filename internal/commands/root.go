@@ -50,7 +50,8 @@ Example:
 			}
 
 			// Backward compatibility: run command directly
-			return runCommand(context.Background(), vmImage, cpuCount, memoryMB, sshUser, sshPass, dangerouslySkipPermissions, args)
+			// Use interactive mode for better terminal support
+			return runCommand(context.Background(), vmImage, cpuCount, memoryMB, sshUser, sshPass, true, args)
 		},
 	}
 

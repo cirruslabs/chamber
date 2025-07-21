@@ -112,25 +112,11 @@ func runInit(ctx context.Context, remoteVM string) error {
 
 	// Run claude setup-token with terminal attached
 	fmt.Fprintln(os.Stdout, "\nSetting up Claude token...")
-	fmt.Fprintln(os.Stdout, "Please follow the instructions below:\n")
+	fmt.Fprintln(os.Stdout, "Please follow the instructions below:")
 
-	session2, err := sshClient.NewSession()
-	if err != nil {
-		return fmt.Errorf("failed to create SSH session: %w", err)
-	}
-	defer session2.Close()
-
-	// Attach stdin/stdout/stderr for interactive setup
-	session2.Stdin = os.Stdin
-	session2.Stdout = os.Stdout
-	session2.Stderr = os.Stderr
-
-	// Request a pseudo-terminal for interactive mode
-	if err := session2.RequestPty("xterm", 80, 24, nil); err != nil {
-		return fmt.Errorf("failed to request PTY: %w", err)
-	}
-
-	if err := session2.Run("bash -l -c 'printf \"\\e[?2004l\" && claude setup-token'"); err != nil {
+	// Use the new terminal proxy for better interactive support
+	terminal := ssh.NewTerminal(sshClient)
+	if err := terminal.RunInteractiveCommand(ctx, "bash -l -c 'printf \"\\e[?2004l\" && claude setup-token'"); err != nil {
 		return fmt.Errorf("failed to run claude setup-token: %w", err)
 	}
 
