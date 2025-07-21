@@ -93,6 +93,9 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 		return err
 	}
 	defer func() {
+		fmt.Fprintln(os.Stdout, "Stopping VM...")
+		// Always try to stop the VM before closing
+		vm.Stop() // Stop will handle cleanup
 		fmt.Fprintln(os.Stdout, "Cleaning up VM...")
 		if err := vm.Close(); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to clean up VM: %v\n", err)

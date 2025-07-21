@@ -103,8 +103,21 @@ func (e *Executor) Execute(ctx context.Context, command string, args []string) e
 		return fmt.Errorf("failed to execute command: %w", err)
 	}
 
+	// Handle context cancellation
+	go func() {
+		<-ctx.Done()
+		// Send interrupt signal to the shell
+		session.Signal(ssh.SIGINT)
+		// Close the session to force termination
+		session.Close()
+	}()
+
 	// Wait for command to complete
 	if err := session.Wait(); err != nil {
+		// Check if context was cancelled
+		if ctx.Err() != nil {
+			return fmt.Errorf("command interrupted")
+		}
 		// Check if it's an exit error, which means the command ran but returned non-zero
 		if exitErr, ok := err.(*ssh.ExitError); ok {
 			// Return a more descriptive error
