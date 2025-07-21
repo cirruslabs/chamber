@@ -58,19 +58,19 @@ func runInit(ctx context.Context, remoteVM string) error {
 	}()
 
 	// Clone the remote VM to chamber-seed
-	fmt.Fprintf(os.Stderr, "Cloning %s to chamber-seed...\n", remoteVM)
+	fmt.Fprintf(os.Stdout, "Cloning %s to chamber-seed...\n", remoteVM)
 	if err := tart.CloneVM(ctx, remoteVM, "chamber-seed"); err != nil {
 		return fmt.Errorf("failed to clone VM: %w", err)
 	}
 
 	// Start the chamber-seed VM
-	fmt.Fprintln(os.Stderr, "Starting chamber-seed VM...")
+	fmt.Fprintln(os.Stdout, "Starting chamber-seed VM...")
 	vm, err := tart.NewVM(ctx, "chamber-seed")
 	if err != nil {
 		return fmt.Errorf("failed to create VM: %w", err)
 	}
 	defer func() {
-		fmt.Fprintln(os.Stderr, "Stopping VM...")
+		fmt.Fprintln(os.Stdout, "Stopping VM...")
 		if err := vm.StopWithContext(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to stop VM: %v\n", err)
 		}
@@ -80,15 +80,15 @@ func runInit(ctx context.Context, remoteVM string) error {
 	vm.Start(ctx, nil)
 
 	// Wait for VM to get IP
-	fmt.Fprintln(os.Stderr, "Waiting for VM to boot...")
+	fmt.Fprintln(os.Stdout, "Waiting for VM to boot...")
 	ip, err := vm.RetrieveIP(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get VM IP: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "VM IP: %s\n", ip)
+	fmt.Fprintf(os.Stdout, "VM IP: %s\n", ip)
 
 	// Connect via SSH
-	fmt.Fprintln(os.Stderr, "Connecting to VM via SSH...")
+	fmt.Fprintln(os.Stdout, "Connecting to VM via SSH...")
 	sshAddr := fmt.Sprintf("%s:22", ip)
 	sshClient, err := ssh.WaitForSSH(ctx, sshAddr, "admin", "admin")
 	if err != nil {
@@ -97,22 +97,22 @@ func runInit(ctx context.Context, remoteVM string) error {
 	defer sshClient.Close()
 
 	// Install Claude Code
-	fmt.Fprintln(os.Stderr, "Installing @anthropic-ai/claude-code...")
+	fmt.Fprintln(os.Stdout, "Installing @anthropic-ai/claude-code...")
 	session, err := sshClient.NewSession()
 	if err != nil {
 		return fmt.Errorf("failed to create SSH session: %w", err)
 	}
 	defer session.Close()
 
-	session.Stdout = os.Stderr
+	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 	if err := session.Run("npm install -g @anthropic-ai/claude-code"); err != nil {
 		return fmt.Errorf("failed to install claude-code: %w", err)
 	}
 
 	// Run claude setup-token with terminal attached
-	fmt.Fprintln(os.Stderr, "\nSetting up Claude token...")
-	fmt.Fprintln(os.Stderr, "Please follow the instructions below:\n")
+	fmt.Fprintln(os.Stdout, "\nSetting up Claude token...")
+	fmt.Fprintln(os.Stdout, "Please follow the instructions below:\n")
 
 	session2, err := sshClient.NewSession()
 	if err != nil {
@@ -134,6 +134,6 @@ func runInit(ctx context.Context, remoteVM string) error {
 		return fmt.Errorf("failed to run claude setup-token: %w", err)
 	}
 
-	fmt.Fprintln(os.Stderr, "\nInitialization complete! chamber-seed VM is ready to use.")
+	fmt.Fprintln(os.Stdout, "\nInitialization complete! chamber-seed VM is ready to use.")
 	return nil
 }

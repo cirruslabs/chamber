@@ -87,26 +87,26 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 	}()
 
 	// Create VM
-	fmt.Fprintf(os.Stderr, "Creating ephemeral VM from %s...\n", vmImage)
+	fmt.Fprintf(os.Stdout, "Creating ephemeral VM from %s...\n", vmImage)
 	vm, err := tart.NewVMClonedFrom(ctx, vmImage, nil)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		fmt.Fprintln(os.Stderr, "Cleaning up VM...")
+		fmt.Fprintln(os.Stdout, "Cleaning up VM...")
 		if err := vm.Close(); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to clean up VM: %v\n", err)
 		}
 	}()
 
 	// Configure VM
-	fmt.Fprintln(os.Stderr, "Configuring VM...")
+	fmt.Fprintln(os.Stdout, "Configuring VM...")
 	if err := vm.Configure(ctx, cpuCount, memoryMB); err != nil {
 		return err
 	}
 
 	// Start VM with directory mount
-	fmt.Fprintln(os.Stderr, "Starting VM...")
+	fmt.Fprintln(os.Stdout, "Starting VM...")
 	directoryMounts := []tart.DirectoryMount{
 		{
 			Name:     "workspace",
@@ -118,12 +118,12 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 	vm.Start(ctx, directoryMounts)
 
 	// Wait for VM to get IP
-	fmt.Fprintln(os.Stderr, "Waiting for VM to boot...")
+	fmt.Fprintln(os.Stdout, "Waiting for VM to boot...")
 	ip, err := vm.RetrieveIP(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get VM IP: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "VM IP: %s\n", ip)
+	fmt.Fprintf(os.Stdout, "VM IP: %s\n", ip)
 
 	// Check for VM startup errors
 	select {
@@ -136,7 +136,7 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 	}
 
 	// Connect via SSH
-	fmt.Fprintln(os.Stderr, "Connecting to VM via SSH...")
+	fmt.Fprintln(os.Stdout, "Connecting to VM via SSH...")
 	sshAddr := fmt.Sprintf("%s:22", ip)
 	sshClient, err := ssh.WaitForSSH(ctx, sshAddr, sshUser, sshPass)
 	if err != nil {
@@ -148,15 +148,15 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 	exec := executor.New(sshClient, cwd)
 
 	// Mount working directory
-	fmt.Fprintln(os.Stderr, "Mounting working directory...")
+	fmt.Fprintln(os.Stdout, "Mounting working directory...")
 	if err := exec.MountWorkingDirectory(ctx); err != nil {
 		return err
 	}
 	defer exec.UnmountWorkingDirectory(ctx)
 
 	// Execute command
-	fmt.Fprintf(os.Stderr, "Executing command: %s %v\n", args[0], args[1:])
-	fmt.Fprintln(os.Stderr, strings.Repeat("-", 80))
+	fmt.Fprintf(os.Stdout, "Executing command: %s %v\n", args[0], args[1:])
+	fmt.Fprintln(os.Stdout, strings.Repeat("-", 80))
 
 	if err := exec.Execute(ctx, args[0], args[1:]); err != nil {
 		return err
