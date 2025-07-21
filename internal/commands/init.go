@@ -130,7 +130,7 @@ func runInit(ctx context.Context, remoteVM string) error {
 		return fmt.Errorf("failed to request PTY: %w", err)
 	}
 
-	if err := session2.Run("bash -l -c 'claude setup-token'"); err != nil {
+	if err := session2.Run("bash -l -c 'printf \"\\e[?2004l\" && claude setup-token'"); err != nil {
 		return fmt.Errorf("failed to run claude setup-token: %w", err)
 	}
 
