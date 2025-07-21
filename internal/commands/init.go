@@ -106,7 +106,7 @@ func runInit(ctx context.Context, remoteVM string) error {
 
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
-	if err := session.Run("npm install -g @anthropic-ai/claude-code"); err != nil {
+	if err := session.Run("bash -l -c 'npm install -g @anthropic-ai/claude-code'"); err != nil {
 		return fmt.Errorf("failed to install claude-code: %w", err)
 	}
 
@@ -130,7 +130,7 @@ func runInit(ctx context.Context, remoteVM string) error {
 		return fmt.Errorf("failed to request PTY: %w", err)
 	}
 
-	if err := session2.Run("claude setup-token"); err != nil {
+	if err := session2.Run("bash -l -c 'claude setup-token'"); err != nil {
 		return fmt.Errorf("failed to run claude setup-token: %w", err)
 	}
 
