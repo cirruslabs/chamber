@@ -20,7 +20,7 @@ and run your agents inside it with Chamber.
 First install `chamber` and initialize it so it will download (around 20GB) and setup a seed virtual machine for all future executions:
 
 ```bash
-brew install cirruslabs/tap/chamber
+brew install --cask cirruslabs/cli/chamber
 chamber init ghcr.io/cirruslabs/macos-sequoia-base:latest
 ```
 
