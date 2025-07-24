@@ -1,6 +1,6 @@
 # Chamber
 
-Chamber is a tool for running coding agents like Claude inside [Tart](https://github.com/cirruslabs/tart) virtual machines
+Chamber is a tool for running coding agents like Claude inside [Tart](https://github.com/cirruslabs/tart) macOS virtual machines
 with the current directory mounted. It provides a lightweight isolated environment for you agents in YOLO mode.
 
 Don't think about prompt injection attacks anymore! Configure a macOS virtual machine only with YOLO-safe permissions
@@ -14,9 +14,6 @@ and run your agents inside it with Chamber.
 - **Agent Safety**: Perfect for AI agents running with flags like `--dangerously-skip-permissions` or similar "YOLO" modes
 - Run commands in isolated Tart VMs that are automatically destroyed after execution
 - Automatic mounting of current directory
-- SSH-based command execution with full stdio redirection
-- Configurable CPU and memory allocation
-- Automatic VM cleanup after execution (no persistence of malicious changes)
 
 ## Installation
 
@@ -53,17 +50,7 @@ chamber claude
 - **Full Functionality**: AI agents work normally but can't escape the sandbox
 - **Easy Integration**: Just prefix your existing AI agent commands with `chamber`
 
-## How It Works
-
-1. Chamber clones a new **ephemeral** VM from the specified base image
-2. Starts the VM with the current directory mounted via virtiofs
-3. Establishes SSH connection to the VM
-4. Mounts the working directory inside the VM at `$HOME/workspace`
-5. Executes the specified coding agent
-6. Streams stdout/stderr back to the host (similar to nohup)
-7. **Automatically destroys the VM** after execution (or on interrupt)
-
 ## License
 
 This project is licensed under the AGPLv3. Tart is licensed under the Fair Source License which allow royalty free usage on
-personal devices and work stations used by a single person.
+personal devices and work stations.
