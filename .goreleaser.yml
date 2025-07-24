@@ -29,7 +29,7 @@ archives:
 release:
   prerelease: auto
 
-brews:
+homebrew_casks:
   - name: chamber
     ids:
       - regular
@@ -38,10 +38,7 @@ brews:
       name: homebrew-cli
     license: AGPLv3
     dependencies:
-      - "cirruslabs/cli/tart"
-    install: |
-      bin.install "chamber"
-      generate_completions_from_executable(bin/"chamber", "completion")
+      - formula: "cirruslabs/cli/tart"
     caveats: See the Github repository for more information
 
 notarize:
