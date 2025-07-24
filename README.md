@@ -6,6 +6,8 @@ with the current directory mounted. It provides a lightweight isolated environme
 Don't think about prompt injection attacks anymore! Configure a macOS virtual machine only with YOLO-safe permissions
 and run your agents inside it with Chamber.
 
+![Chamber Illustration](assets/chamber-illustration.png)
+
 ## Features
 
 - **VM Isolation Security**: Prevents prompt injection attacks by isolating AI agents in ephemeral VMs
