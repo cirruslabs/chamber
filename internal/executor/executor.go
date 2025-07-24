@@ -135,8 +135,10 @@ func (e *Executor) ExecuteInteractive(ctx context.Context, command string, args 
 	// Create terminal proxy
 	terminal := ssh.NewTerminal(e.sshClient)
 
-	// Build the full command with working directory change
-	fullCommand := fmt.Sprintf("cd %s && %s %s", e.mountedWorkDir, command, strings.Join(args, " "))
+	// Build the full command with working directory change and login shell
+	// Use zsh -l -c to ensure the user's profile is loaded (similar to init.go)
+	innerCommand := fmt.Sprintf("cd %s && %s %s", e.mountedWorkDir, command, strings.Join(args, " "))
+	fullCommand := fmt.Sprintf("zsh -l -c %q", innerCommand)
 
 	// Execute with full terminal proxying
 	return terminal.RunInteractiveCommand(ctx, fullCommand)

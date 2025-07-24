@@ -106,7 +106,7 @@ func runInit(ctx context.Context, remoteVM string) error {
 
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
-	if err := session.Run("bash -l -c 'npm install -g @anthropic-ai/claude-code'"); err != nil {
+	if err := session.Run("zsh -l -c 'npm install -g @anthropic-ai/claude-code'"); err != nil {
 		return fmt.Errorf("failed to install claude-code: %w", err)
 	}
 
@@ -116,7 +116,7 @@ func runInit(ctx context.Context, remoteVM string) error {
 
 	// Use the new terminal proxy for better interactive support
 	terminal := ssh.NewTerminal(sshClient)
-	if err := terminal.RunInteractiveCommand(ctx, "bash -l -c 'printf \"\\e[?2004l\" && claude setup-token'"); err != nil {
+	if err := terminal.RunInteractiveCommand(ctx, "zsh -l -c 'printf \"\\e[?2004l\" && claude setup-token'"); err != nil {
 		return fmt.Errorf("failed to run claude setup-token: %w", err)
 	}
 
