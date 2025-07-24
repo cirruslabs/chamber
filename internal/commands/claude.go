@@ -34,7 +34,7 @@ Example:
 			// Prepend claude command and --dangerously-skip-permissions flag
 			claudeArgs := []string{"claude", "--dangerously-skip-permissions"}
 			claudeArgs = append(claudeArgs, args...)
-			return runCommand(cmd.Context(), vmImage, "admin", "admin", true, claudeArgs)
+			return runCommand(cmd.Context(), vmImage, 0, 0, "admin", "admin", true, claudeArgs)
 		},
 	}
 
@@ -48,7 +48,7 @@ Example:
 	return cmd
 }
 
-func runCommand(ctx context.Context, vmImage string, sshUser, sshPass string, interactive bool, args []string) error {
+func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, sshUser, sshPass string, interactive bool, args []string) error {
 	// Check if Tart is installed
 	if !tart.Installed() {
 		return fmt.Errorf("tart is not installed. Please install it from https://github.com/cirruslabs/tart")
