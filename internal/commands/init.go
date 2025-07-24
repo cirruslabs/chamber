@@ -70,7 +70,7 @@ func runInit(ctx context.Context, remoteVM string) error {
 		return fmt.Errorf("failed to create VM: %w", err)
 	}
 	defer func() {
-		fmt.Fprintln(os.Stdout, "Stopping VM...")
+		fmt.Fprintln(os.Stdout, "Cleaning up VM...")
 		if err := vm.StopWithContext(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to stop VM: %v\n", err)
 		}
