@@ -152,7 +152,9 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 	if err := exec.MountWorkingDirectory(ctx); err != nil {
 		return err
 	}
-	defer exec.UnmountWorkingDirectory(ctx)
+	defer func() {
+		_ = exec.UnmountWorkingDirectory(ctx)
+	}()
 
 	// Execute command
 	fmt.Fprintf(os.Stdout, "Executing command: %s %v\n", args[0], args[1:])

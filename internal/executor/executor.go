@@ -108,9 +108,9 @@ func (e *Executor) Execute(ctx context.Context, command string, args []string) e
 	go func() {
 		<-ctx.Done()
 		// Send interrupt signal to the shell
-		session.Signal(gossh.SIGINT)
+		_ = session.Signal(gossh.SIGINT)
 		// Close the session to force termination
-		session.Close()
+		_ = session.Close()
 	}()
 
 	// Wait for command to complete

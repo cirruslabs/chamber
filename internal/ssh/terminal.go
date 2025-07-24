@@ -112,18 +112,18 @@ func (t *Terminal) RunInteractiveCommand(ctx context.Context, command string) er
 
 	go func() {
 		defer wg.Done()
-		io.Copy(stdin, os.Stdin)
-		stdin.Close()
+		_, _ = io.Copy(stdin, os.Stdin)
+		_ = stdin.Close()
 	}()
 
 	go func() {
 		defer wg.Done()
-		io.Copy(os.Stdout, stdout)
+		_, _ = io.Copy(os.Stdout, stdout)
 	}()
 
 	go func() {
 		defer wg.Done()
-		io.Copy(os.Stderr, stderr)
+		_, _ = io.Copy(os.Stderr, stderr)
 	}()
 
 	// Wait for command to complete
@@ -153,7 +153,7 @@ func (t *Terminal) handleWindowResize(ctx context.Context, session *ssh.Session,
 		case <-ch:
 			width, height, _ := term.GetSize(fd)
 			if session != nil {
-				session.WindowChange(height, width)
+				_ = session.WindowChange(height, width)
 			}
 		}
 	}
