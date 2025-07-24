@@ -13,6 +13,6 @@ task:
     FURY_TOKEN: ENCRYPTED[!97fe4497d9aca60a3d64904883b81e21f19706c6aedda625c97f62f67ec46b8efa74c55699956158bbf0a23726e7d9f6!]
     GORELEASER_KEY: ENCRYPTED[!9b80b6ef684ceaf40edd4c7af93014ee156c8aba7e6e5795f41c482729887b5c31f36b651491d790f1f668670888d9fd!]
   install_script:
-    - brew update && brew install go goreleaser/tap/goreleaser-pro
+    - brew install --cask goreleaser/tap/goreleaser-pro
   release_script: goreleaser
 
