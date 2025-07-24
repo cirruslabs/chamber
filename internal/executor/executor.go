@@ -16,13 +16,15 @@ type Executor struct {
 	sshClient      *gossh.Client
 	workingDir     string
 	mountedWorkDir string
+	dirName        string
 }
 
-func New(sshClient *gossh.Client, workingDir string) *Executor {
+func New(sshClient *gossh.Client, workingDir string, dirName string) *Executor {
 	return &Executor{
 		sshClient:      sshClient,
 		workingDir:     workingDir,
-		mountedWorkDir: "$HOME/workspace",
+		mountedWorkDir: fmt.Sprintf("$HOME/workspace/%s", dirName),
+		dirName:        dirName,
 	}
 }
 
@@ -33,9 +35,15 @@ func (e *Executor) MountWorkingDirectory(ctx context.Context) error {
 	}
 	defer session.Close()
 
-	// Create mount point and mount virtiofs
-	tag := "tart.virtiofs.workspace"
-	command := fmt.Sprintf("mkdir -p %q && mount_virtiofs %q %q", e.mountedWorkDir, tag, e.mountedWorkDir)
+	// Unmount any existing shared files and create workspace directory
+	// Then mount virtiofs with the automount tag
+	commands := []string{
+		`sudo umount "/Volumes/My Shared Files"`,
+		`mkdir -p ~/workspace`,
+		`mount_virtiofs com.apple.virtio-fs.automount ~/workspace`,
+	}
+
+	command := strings.Join(commands, " && ")
 
 	if err := session.Run(command); err != nil {
 		return fmt.Errorf("failed to mount working directory: %w", err)

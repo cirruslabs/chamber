@@ -34,7 +34,7 @@ Example:
 			// Prepend claude command and --dangerously-skip-permissions flag
 			claudeArgs := []string{"claude", "--dangerously-skip-permissions"}
 			claudeArgs = append(claudeArgs, args...)
-			return runCommand(cmd.Context(), vmImage, cpuCount, memoryMB, sshUser, sshPass, true, claudeArgs)
+			return runCommand(cmd.Context(), vmImage, "admin", "admin", true, claudeArgs)
 		},
 	}
 
@@ -48,7 +48,7 @@ Example:
 	return cmd
 }
 
-func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, sshUser, sshPass string, interactive bool, args []string) error {
+func runCommand(ctx context.Context, vmImage string, sshUser, sshPass string, interactive bool, args []string) error {
 	// Check if Tart is installed
 	if !tart.Installed() {
 		return fmt.Errorf("tart is not installed. Please install it from https://github.com/cirruslabs/tart")
@@ -63,6 +63,9 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path: %w", err)
 	}
+
+	// Extract directory name for dynamic mounting
+	dirName := filepath.Base(cwd)
 
 	// Create context with cancellation
 	if ctx == nil {
@@ -103,9 +106,8 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 	fmt.Fprintln(os.Stdout, "Starting VM...")
 	directoryMounts := []tart.DirectoryMount{
 		{
-			Name:     "workspace",
+			Name:     dirName,
 			Path:     cwd,
-			Tag:      "tart.virtiofs.workspace",
 			ReadOnly: false,
 		},
 	}
@@ -139,7 +141,7 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 	defer sshClient.Close()
 
 	// Create executor
-	exec := executor.New(sshClient, cwd)
+	exec := executor.New(sshClient, cwd, dirName)
 
 	// Mount working directory
 	fmt.Fprintln(os.Stdout, "Mounting working directory...")
