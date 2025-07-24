@@ -110,14 +110,11 @@ func runInit(ctx context.Context, remoteVM string) error {
 		return fmt.Errorf("failed to install claude-code: %w", err)
 	}
 
-	// Run claude setup-token with terminal attached
-	fmt.Fprintln(os.Stdout, "\nSetting up Claude token...")
-	fmt.Fprintln(os.Stdout, "Please follow the instructions below:")
-
-	// Use the new terminal proxy for better interactive support
+	// Run claude to configure defaults
+	fmt.Fprintln(os.Stdout, "\nConfiguring Claude... Please follow the instructions below:")
 	terminal := ssh.NewTerminal(sshClient)
-	if err := terminal.RunInteractiveCommand(ctx, "zsh -l -c 'printf \"\\e[?2004l\" && claude setup-token'"); err != nil {
-		return fmt.Errorf("failed to run claude setup-token: %w", err)
+	if err := terminal.RunInteractiveCommand(ctx, "zsh -l -c 'claude'"); err != nil {
+		return fmt.Errorf("failed to run claude for default configuration: %w", err)
 	}
 
 	fmt.Fprintln(os.Stdout, "\nInitialization complete! chamber-seed VM is ready to use.")
