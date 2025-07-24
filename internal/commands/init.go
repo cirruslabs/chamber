@@ -118,5 +118,8 @@ func runInit(ctx context.Context, remoteVM string) error {
 	}
 
 	fmt.Fprintln(os.Stdout, "\nInitialization complete! chamber-seed VM is ready to use.")
+	fmt.Fprintln(os.Stdout, "\nYou can customize the seed VM by running:")
+	fmt.Fprintln(os.Stdout, "  tart run chamber-seed")
+	fmt.Fprintln(os.Stdout, "\nThis allows you to install dependencies like Go or any other specific packages.")
 	return nil
 }
