@@ -17,11 +17,7 @@ import (
 
 func NewClaudeCmd() *cobra.Command {
 	var (
-		vmImage  string
-		cpuCount uint32
-		memoryMB uint32
-		sshUser  string
-		sshPass  string
+		vmImage string
 	)
 
 	cmd := &cobra.Command{
@@ -32,8 +28,8 @@ Automatically prepends --dangerously-skip-permissions to claude arguments for AI
 
 Example:
   chamber claude
-  chamber claude --model opus-3.5
-  chamber claude --vm=macos-xcode --continue`,
+  chamber claude --model=opus
+  chamber claude --vm=macos-xcode`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Prepend claude command and --dangerously-skip-permissions flag
 			claudeArgs := []string{"claude", "--dangerously-skip-permissions"}
@@ -43,13 +39,11 @@ Example:
 	}
 
 	cmd.Flags().StringVar(&vmImage, "vm", "chamber-seed", "Tart VM image to use (default: chamber-seed)")
-	cmd.Flags().Uint32Var(&cpuCount, "cpu", 0, "Number of CPUs (0 = default)")
-	cmd.Flags().Uint32Var(&memoryMB, "memory", 0, "Memory in MB (0 = default)")
-	cmd.Flags().StringVar(&sshUser, "ssh-user", "admin", "SSH username")
-	cmd.Flags().StringVar(&sshPass, "ssh-pass", "admin", "SSH password")
 
-	// Stop parsing flags after the first non-flag argument
+	// Stop parsing flags after the first non-flag argument AND disable flag parsing entirely for unknown flags
 	cmd.Flags().SetInterspersed(false)
+	cmd.DisableFlagParsing = false
+	cmd.FParseErrWhitelist.UnknownFlags = true
 
 	return cmd
 }
