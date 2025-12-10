@@ -1,6 +1,6 @@
 # Chamber
 
-Chamber is a tool for running coding agents like Claude inside [Tart](https://github.com/cirruslabs/tart) macOS virtual machines
+Chamber is a tool for running coding agents like Claude or Codex inside [Tart](https://github.com/cirruslabs/tart) macOS virtual machines
 with the current directory mounted. It provides a lightweight isolated environment for you agents in YOLO mode.
 
 Don't think about prompt injection attacks anymore! Configure a macOS virtual machine only with YOLO-safe permissions
@@ -11,7 +11,7 @@ and run your agents inside it with Chamber.
 ## Features
 
 - **VM Isolation Security**: Prevents prompt injection attacks by isolating AI agents in ephemeral VMs
-- **Agent Safety**: Perfect for AI agents running with flags like `--dangerously-skip-permissions` or similar "YOLO" modes
+- **Agent Safety**: Perfect for AI agents running with flags like `--dangerously-skip-permissions`, `--dangerously-bypass-approvals-and-sandbox`, or similar "YOLO" modes
 - Run commands in isolated Tart VMs that are automatically destroyed after execution
 - Automatic mounting of current directory
 
@@ -32,16 +32,18 @@ tart run chamber-seed
 
 ## Why Use Chamber for AI Agents?
 
-**Problem**: AI agents running with permissive flags like `--dangerously-skip-permissions`, `--yes`, or `--auto-commits` are vulnerable to prompt injection attacks that can compromise your host system.
+**Problem**: AI agents running with permissive flags like `--dangerously-skip-permissions`, `--dangerously-bypass-approvals-and-sandbox`, `--yes`, or `--auto-commits` are vulnerable to prompt injection attacks that can compromise your host system.
 
 **Solution**: Chamber isolates AI agents in ephemeral VMs, making "YOLO" mode safe:
 
 ```bash
 # ❌ DANGEROUS: Direct execution on host
 claude --dangerously-skip-permissions
+codex --dangerously-bypass-approvals-and-sandbox
 
-# ✅ SAFE: Isolated execution in ephemeral VM (chamber will automatically add --dangerously-skip-permissions)
+# ✅ SAFE: Isolated execution in ephemeral VM (chamber will automatically add the dangerous flags for you)
 chamber claude
+chamber codex
 ```
 
 **Key Benefits**:

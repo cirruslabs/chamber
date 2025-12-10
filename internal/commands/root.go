@@ -31,6 +31,7 @@ isolating execution in ephemeral VMs that are automatically destroyed after each
 Example:
   chamber claude                                              # Run Claude AI in VM
   chamber claude --model opus .                               # Run Claude with specific model
+  chamber codex                                               # Run Codex in VM
   chamber init ghcr.io/cirruslabs/macos-sequoia-base:latest   # Initialize chamber-seed VM
 `,
 		Version:       version.FullVersion,
@@ -69,6 +70,7 @@ Example:
 	// Add subcommands
 	cmd.AddCommand(NewInitCmd())
 	cmd.AddCommand(NewClaudeCmd())
+	cmd.AddCommand(NewCodexCmd())
 
 	return cmd
 }
