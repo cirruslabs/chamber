@@ -69,11 +69,13 @@ chamber --dir=reference:~/docs:ro claude
 ```
 
 **Format**: `--dir=name:path[:ro]`
-- `name`: Mount point name (used as directory name inside the VM)
+- `name`: Mount point name (must be unique and different from your current working directory's name)
 - `path`: Host path (supports `~` for home directory)
 - `ro`: Optional, mount as read-only
 
 Mounted directories are available at `~/workspace/<name>` inside the VM.
+
+> **Note**: Each mount name must be unique. You cannot use the same name twice or use a name that matches your current working directory's folder name.
 
 ## License
 

@@ -103,6 +103,43 @@ func TestParseDirectoryMounts(t *testing.T) {
 			errContains: "invalid --dir format",
 		},
 		{
+			name:        "empty mount name",
+			dirs:        []string{":/path/to/data"},
+			wantErr:     true,
+			errContains: "mount name cannot be empty",
+		},
+		{
+			name:        "whitespace-only mount name",
+			dirs:        []string{"  :/path/to/data"},
+			wantErr:     true,
+			errContains: "mount name cannot be empty",
+		},
+		{
+			name:        "duplicate mount names",
+			dirs:        []string{"data:/path1", "data:/path2"},
+			wantErr:     true,
+			errContains: "duplicate mount name",
+		},
+		{
+			name:        "invalid read-only flag",
+			dirs:        []string{"data:/path:rw"},
+			wantErr:     true,
+			errContains: "must be 'ro'",
+		},
+		{
+			name:        "invalid read-only flag - readonly",
+			dirs:        []string{"data:/path:readonly"},
+			wantErr:     true,
+			errContains: "must be 'ro'",
+		},
+		{
+			name:      "just home directory",
+			dirs:      []string{"home:~"},
+			wantNames: []string{"home"},
+			wantRO:    []bool{false},
+			wantErr:   false,
+		},
+		{
 			name:      "empty dirs",
 			dirs:      []string{},
 			wantNames: nil,
@@ -159,6 +196,20 @@ func TestParseDirectoryMounts(t *testing.T) {
 		expectedPath := filepath.Join(homeDir, "some-dir")
 		if mounts[0].Path != expectedPath {
 			t.Errorf("mount.Path = %q, want %q", mounts[0].Path, expectedPath)
+		}
+	})
+
+	// Test just ~ expands to home directory
+	t.Run("just tilde expands to home directory", func(t *testing.T) {
+		mounts, err := parseDirectoryMounts([]string{"home:~"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(mounts) != 1 {
+			t.Fatalf("expected 1 mount, got %d", len(mounts))
+		}
+		if mounts[0].Path != homeDir {
+			t.Errorf("mount.Path = %q, want %q", mounts[0].Path, homeDir)
 		}
 	})
 }

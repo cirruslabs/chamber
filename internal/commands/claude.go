@@ -20,24 +20,43 @@ import (
 // Examples:
 //   - data:~/my-data
 //   - docs:/path/to/docs:ro
+//
+// Note: ~username syntax is not supported, only ~ for current user's home directory.
 func parseDirectoryMounts(dirs []string) ([]tart.DirectoryMount, error) {
 	var mounts []tart.DirectoryMount
+	seenNames := make(map[string]bool)
+
 	for _, dir := range dirs {
 		parts := strings.Split(dir, ":")
 		if len(parts) < 2 {
 			return nil, fmt.Errorf("invalid --dir format: %q (expected name:path[:ro])", dir)
 		}
 
-		name := parts[0]
+		name := strings.TrimSpace(parts[0])
+		if name == "" {
+			return nil, fmt.Errorf("invalid --dir format: %q (mount name cannot be empty)", dir)
+		}
+
+		// Check for duplicate mount names
+		if seenNames[name] {
+			return nil, fmt.Errorf("duplicate mount name: %q", name)
+		}
+		seenNames[name] = true
+
 		path := parts[1]
 
-		// Expand ~ to home directory
-		if strings.HasPrefix(path, "~") {
+		// Expand ~ or ~/... to the current user's home directory.
+		// Note: forms like ~username/... are not supported.
+		if path == "~" || strings.HasPrefix(path, "~/") {
 			home, err := os.UserHomeDir()
 			if err != nil {
 				return nil, fmt.Errorf("failed to get home directory: %w", err)
 			}
-			path = filepath.Join(home, path[1:])
+			if path == "~" {
+				path = home
+			} else {
+				path = filepath.Join(home, path[2:])
+			}
 		}
 
 		// Convert to absolute path
@@ -46,10 +65,14 @@ func parseDirectoryMounts(dirs []string) ([]tart.DirectoryMount, error) {
 			return nil, fmt.Errorf("failed to get absolute path for %q: %w", path, err)
 		}
 
-		// Check if read-only
+		// Check if read-only (only "ro" is valid)
 		readOnly := false
-		if len(parts) > 2 && parts[2] == "ro" {
-			readOnly = true
+		if len(parts) > 2 {
+			if parts[2] == "ro" {
+				readOnly = true
+			} else if parts[2] != "" {
+				return nil, fmt.Errorf("invalid --dir format: %q (third parameter must be 'ro' for read-only, got %q)", dir, parts[2])
+			}
 		}
 
 		mounts = append(mounts, tart.DirectoryMount{
@@ -163,6 +186,12 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 		additionalMounts, err := parseDirectoryMounts(extraDirs)
 		if err != nil {
 			return err
+		}
+		// Prevent name collisions with the working directory mount
+		for _, m := range additionalMounts {
+			if m.Name == dirName {
+				return fmt.Errorf("mount name %q conflicts with working directory name; please choose a different name", m.Name)
+			}
 		}
 		directoryMounts = append(directoryMounts, additionalMounts...)
 	}
