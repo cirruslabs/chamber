@@ -14,6 +14,7 @@ and run your agents inside it with Chamber.
 - **Agent Safety**: Perfect for AI agents running with flags like `--dangerously-skip-permissions`, `--dangerously-bypass-approvals-and-sandbox`, or similar "YOLO" modes
 - Run commands in isolated Tart VMs that are automatically destroyed after execution
 - Automatic mounting of current directory
+- Support for mounting additional directories with `--dir`
 
 ## Installation
 
@@ -51,6 +52,28 @@ chamber codex
 - **Automatic Cleanup**: VMs are destroyed after each run - always start from a clean seed image
 - **Full Functionality**: AI agents work normally but can't escape the sandbox
 - **Easy Integration**: Just prefix your existing AI agent commands with `chamber`
+
+## Mounting Additional Directories
+
+By default, Chamber only mounts the current working directory. Use the `--dir` flag to mount additional host directories into the VM:
+
+```bash
+# Mount a single additional directory
+chamber --dir=data:~/my-data claude
+
+# Mount multiple directories
+chamber --dir=memory:~/basic-memory --dir=config:~/.basic-memory claude
+
+# Mount a directory as read-only
+chamber --dir=reference:~/docs:ro claude
+```
+
+**Format**: `--dir=name:path[:ro]`
+- `name`: Mount point name (used as directory name inside the VM)
+- `path`: Host path (supports `~` for home directory)
+- `ro`: Optional, mount as read-only
+
+Mounted directories are available at `~/workspace/<name>` inside the VM.
 
 ## License
 
