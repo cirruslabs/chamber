@@ -19,7 +19,7 @@ Example:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			codexArgs := []string{"codex", "--dangerously-bypass-approvals-and-sandbox"}
 			codexArgs = append(codexArgs, args...)
-			return runCommand(cmd.Context(), vmImage, 0, 0, "admin", "admin", true, codexArgs)
+			return runCommand(cmd.Context(), vmImage, 0, 0, "admin", "admin", additionalDirs, true, codexArgs)
 		},
 	}
 

@@ -15,6 +15,75 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// parseDirectoryMounts parses --dir flag values into DirectoryMount structs.
+// Format: name:path[:ro]
+// Examples:
+//   - data:~/my-data
+//   - docs:/path/to/docs:ro
+//
+// Note: ~username syntax is not supported, only ~ for current user's home directory.
+func parseDirectoryMounts(dirs []string) ([]tart.DirectoryMount, error) {
+	var mounts []tart.DirectoryMount
+	seenNames := make(map[string]bool)
+
+	for _, dir := range dirs {
+		parts := strings.Split(dir, ":")
+		if len(parts) < 2 {
+			return nil, fmt.Errorf("invalid --dir format: %q (expected name:path[:ro])", dir)
+		}
+
+		name := strings.TrimSpace(parts[0])
+		if name == "" {
+			return nil, fmt.Errorf("invalid --dir format: %q (mount name cannot be empty)", dir)
+		}
+
+		// Check for duplicate mount names
+		if seenNames[name] {
+			return nil, fmt.Errorf("duplicate mount name: %q", name)
+		}
+		seenNames[name] = true
+
+		path := parts[1]
+
+		// Expand ~ or ~/... to the current user's home directory.
+		// Note: forms like ~username/... are not supported.
+		if path == "~" || strings.HasPrefix(path, "~/") {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return nil, fmt.Errorf("failed to get home directory: %w", err)
+			}
+			if path == "~" {
+				path = home
+			} else {
+				path = filepath.Join(home, path[2:])
+			}
+		}
+
+		// Convert to absolute path
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get absolute path for %q: %w", path, err)
+		}
+
+		// Check if read-only (only "ro" is valid)
+		readOnly := false
+		if len(parts) > 2 {
+			if parts[2] == "ro" {
+				readOnly = true
+			} else if parts[2] != "" {
+				return nil, fmt.Errorf("invalid --dir format: %q (third parameter must be 'ro' for read-only, got %q)", dir, parts[2])
+			}
+		}
+
+		mounts = append(mounts, tart.DirectoryMount{
+			Name:     name,
+			Path:     absPath,
+			ReadOnly: readOnly,
+		})
+	}
+	return mounts, nil
+}
+
 func NewClaudeCmd() *cobra.Command {
 	var (
 		vmImage string
@@ -34,7 +103,7 @@ Example:
 			// Prepend claude command and --dangerously-skip-permissions flag
 			claudeArgs := []string{"claude", "--dangerously-skip-permissions"}
 			claudeArgs = append(claudeArgs, args...)
-			return runCommand(cmd.Context(), vmImage, 0, 0, "admin", "admin", true, claudeArgs)
+			return runCommand(cmd.Context(), vmImage, 0, 0, "admin", "admin", additionalDirs, true, claudeArgs)
 		},
 	}
 
@@ -48,7 +117,7 @@ Example:
 	return cmd
 }
 
-func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, sshUser, sshPass string, interactive bool, args []string) error {
+func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, sshUser, sshPass string, extraDirs []string, interactive bool, args []string) error {
 	// Check if Tart is installed
 	if !tart.Installed() {
 		return fmt.Errorf("tart is not installed. Please install it from https://github.com/cirruslabs/tart")
@@ -102,7 +171,7 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 		return err
 	}
 
-	// Start VM with directory mount
+	// Start VM with directory mounts
 	fmt.Fprintln(os.Stdout, "Starting VM...")
 	directoryMounts := []tart.DirectoryMount{
 		{
@@ -111,6 +180,22 @@ func runCommand(ctx context.Context, vmImage string, cpuCount, memoryMB uint32, 
 			ReadOnly: false,
 		},
 	}
+
+	// Parse and add user-specified additional directories
+	if len(extraDirs) > 0 {
+		additionalMounts, err := parseDirectoryMounts(extraDirs)
+		if err != nil {
+			return err
+		}
+		// Prevent name collisions with the working directory mount
+		for _, m := range additionalMounts {
+			if m.Name == dirName {
+				return fmt.Errorf("mount name %q conflicts with working directory name; please choose a different name", m.Name)
+			}
+		}
+		directoryMounts = append(directoryMounts, additionalMounts...)
+	}
+
 	vm.Start(ctx, directoryMounts)
 
 	// Wait for VM to get IP
