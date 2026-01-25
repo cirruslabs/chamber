@@ -12,6 +12,7 @@ type VM struct {
 	ident              string
 	baseImage          string
 	env                map[string]string
+	netBridged         string
 	runningVMCtx       context.Context
 	runningVMCtxCancel context.CancelFunc
 	wg                 sync.WaitGroup
@@ -33,6 +34,7 @@ func NewVMClonedFrom(
 	ctx context.Context,
 	from string,
 	env map[string]string,
+	netBridged string,
 ) (*VM, error) {
 	runningVMCtx, runningVMCtxCancel := context.WithCancel(context.Background())
 
@@ -44,6 +46,7 @@ func NewVMClonedFrom(
 		ident:              tmpVMName,
 		baseImage:          from,
 		env:                env,
+		netBridged:         netBridged,
 		runningVMCtx:       runningVMCtx,
 		runningVMCtxCancel: runningVMCtxCancel,
 		errChan:            make(chan error, 1),
@@ -91,6 +94,11 @@ func (vm *VM) Start(ctx context.Context, directoryMounts []DirectoryMount) {
 		defer vm.wg.Done()
 
 		args := []string{"--no-graphics", "--no-clipboard", "--no-audio"}
+
+		// Add bridged networking if configured
+		if vm.netBridged != "" {
+			args = append(args, "--net-bridged", vm.netBridged)
+		}
 
 		for _, dm := range directoryMounts {
 			var opts []string
