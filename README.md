@@ -52,6 +52,39 @@ chamber codex
 - **Full Functionality**: AI agents work normally but can't escape the sandbox
 - **Easy Integration**: Just prefix your existing AI agent commands with `chamber`
 
+## Configuration
+
+Chamber supports several configuration flags to customize VM behavior:
+
+```bash
+chamber [command] --help  # Show all available flags
+```
+
+### Network Configuration
+
+If your VMs cannot access external networks (e.g., cannot reach 8.8.8.8 or download from the internet), you can use bridged networking:
+
+```bash
+chamber claude --net-bridged=en0
+chamber codex --net-bridged=en0
+```
+
+The `--net-bridged` flag specifies which network interface to use for bridged networking. Common values:
+- `en0` - Primary Ethernet/Wi-Fi interface
+- `en1` - Secondary network interface
+
+To find your network interfaces, run `ifconfig` and look for active interfaces with IP addresses.
+
+### Other Configuration Options
+
+```bash
+--vm string          # Specify a custom VM image (default: chamber-seed)
+--cpu uint32         # Number of CPUs for the VM (default: VM default)
+--memory uint32      # Memory in MB for the VM (default: VM default)
+--ssh-user string    # SSH username (default: admin)
+--ssh-pass string    # SSH password (default: admin)
+```
+
 ## License
 
 This project is licensed under the AGPLv3. Tart is licensed under the Fair Source License which allow royalty free usage on
