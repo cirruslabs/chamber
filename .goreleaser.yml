@@ -38,7 +38,7 @@ homebrew_casks:
       name: homebrew-cli
     license: AGPLv3
     dependencies:
-      - formula: "cirruslabs/cli/tart"
+      - formula: "openai/tools/tart"
     caveats: See the Github repository for more information
 
 notarize:
